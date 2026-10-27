@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Search Abstraction Layer</title>
+  <style>
+    :root { --bg: #f6f7f9; --fg: #1d2330; --muted: #5d6677; --card: #fff; --line: #dde1e8; --accent: #2b59c3; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #14171d; --fg: #e8ebf1; --muted: #9aa3b3; --card: #1d2129; --line: #2e3440; --accent: #7aa2ff; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { margin: 0 0 4px; font-size: 1.75rem; }
+    p.lead { margin: 0 0 24px; color: var(--muted); }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    h2 { margin: 0 0 12px; font-size: 1.1rem; }
+    code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: .9em; word-break: break-all; }
+    a { color: var(--accent); }
+    ul { padding-left: 20px; margin: 0; }
+    li { margin: 6px 0; }
+    form { display: flex; gap: 8px; flex-wrap: wrap; }
+    input { flex: 1 1 200px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; }
+    input[type=number] { flex: 0 0 90px; }
+    button { padding: 10px 18px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+    .grid a { display: block; text-decoration: none; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .grid img { width: 100%; height: 140px; object-fit: cover; display: block; background: var(--line); }
+    .grid span { display: block; padding: 6px 8px; font-size: .8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status { color: var(--muted); margin-top: 12px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Image Search Abstraction Layer</h1>
+  <p class="lead">A freeCodeCamp API project. Images come from Wikimedia Commons.</p>
+
+  <section>
+    <h2>API usage</h2>
+    <ul>
+      <li>Search images: <code>GET /query/&lt;search string&gt;?page=&lt;n&gt;</code><br>
+        Example: <a href="/query/lolcats%20funny?page=2">/query/lolcats funny?page=2</a></li>
+      <li>Recent searches: <code>GET /recent</code><br>
+        Example: <a href="/recent">/recent</a></li>
+    </ul>
+    <p>Each result contains <code>url</code>, <code>snippet</code>, <code>thumbnail</code> and <code>context</code> (the page the image is from).</p>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <form id="search">
+      <input id="q" placeholder="Search for images…" required>
+      <input id="page" type="number" min="1" value="1" aria-label="Page">
+      <button>Search</button>
+    </form>
+    <div class="status" id="status"></div>
+    <div class="grid" id="results"></div>
+  </section>
+</main>
+<script>
+  const form = document.getElementById('search');
+  const status = document.getElementById('status');
+  const grid = document.getElementById('results');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = document.getElementById('q').value.trim();
+    const page = document.getElementById('page').value || 1;
+    status.textContent = 'Searching…';
+    grid.innerHTML = '';
+    try {
+      const res = await fetch(`/query/${encodeURIComponent(q)}?page=${page}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      status.textContent = data.length ? `${data.length} results` : 'No results';
+      for (const item of data) {
+        const a = document.createElement('a');
+        a.href = item.context;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        const img = document.createElement('img');
+        img.src = item.thumbnail || item.url;
+        img.alt = item.snippet;
+        img.loading = 'lazy';
+        const span = document.createElement('span');
+        span.textContent = item.snippet;
+        a.append(img, span);
+        grid.append(a);
+      }
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+</script>
+</body>
+</html>
